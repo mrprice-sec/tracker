@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mprice-sec · 1278 Days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #111318;
+    --bg3: #181c23;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #00e5a0;
+    --accent2: #0066ff;
+    --accent3: #ff4d4d;
+    --amber: #f59e0b;
+    --p1: #3b82f6;
+    --p2: #10b981;
+    --p3: #f59e0b;
+    --p4: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── LAYOUT ── */
+  .shell { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+  }
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-handle {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--accent);
+    letter-spacing: 0.1em; margin-bottom: 2px;
+  }
+  .logo-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .nav { flex: 1; padding: 12px 0; }
+  .nav-section { padding: 8px 20px 4px; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; font-family: 'Space Mono', monospace; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px; font-size: 13px; color: var(--muted);
+    cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,229,160,0.05); }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 14px; }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .day-counter {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px; font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .day-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .progress-mini {
+    margin-top: 10px; height: 3px;
+    background: var(--border2); border-radius: 2px; overflow: hidden;
+  }
+  .progress-mini-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 2px; transition: width 0.5s ease;
+  }
+
+  /* ── MAIN ── */
+  .main { margin-left: 240px; flex: 1; padding: 28px 32px; max-width: 1100px; }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; font-family: 'Space Mono', monospace; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .c-accent { color: var(--accent); }
+  .c-blue   { color: var(--p1); }
+  .c-amber  { color: var(--amber); }
+  .c-red    { color: var(--p4); }
+
+  /* ── PHASE CARDS ── */
+  .phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .phase-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .phase-card:hover { border-color: var(--border2); background: var(--bg3); }
+  .phase-card.active-phase { border-color: var(--accent); }
+  .phase-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .phase-badge {
+    font-size: 10px; font-family: 'Space Mono', monospace;
+    padding: 3px 8px; border-radius: 4px; letter-spacing: 0.08em;
+  }
+  .ph1 { background: rgba(59,130,246,0.15); color: var(--p1); }
+  .ph2 { background: rgba(16,185,129,0.15); color: var(--p2); }
+  .ph3 { background: rgba(245,158,11,0.15); color: var(--p3); }
+  .ph4 { background: rgba(239,68,68,0.15); color: var(--p4); }
+  .phase-pct { font-size: 13px; color: var(--muted); font-family: 'Space Mono', monospace; }
+  .phase-name { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .phase-days { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .phase-bar { height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+  .phase-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .fill-p1 { background: var(--p1); }
+  .fill-p2 { background: var(--p2); }
+  .fill-p3 { background: var(--p3); }
+  .fill-p4 { background: var(--p4); }
+
+  /* ── TASK LIST ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; }
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+  .task-item {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 12px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .task-item:hover { border-color: var(--border2); }
+  .task-item.done { opacity: 0.5; }
+  .task-item.done .task-title { text-decoration: line-through; }
+  .task-check {
+    width: 18px; height: 18px; border: 1.5px solid var(--border2);
+    border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .task-item.done .task-check { background: var(--accent); border-color: var(--accent); }
+  .task-body { flex: 1; }
+  .task-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .task-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; }
+  .task-tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── AI COACH ── */
+  .chat-container {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .chat-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .chat-title { font-size: 13px; font-weight: 700; }
+  .chat-sub { font-size: 11px; color: var(--muted); margin-left: auto; font-family: 'Space Mono', monospace; }
+
+  .chat-messages {
+    height: 340px; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg { max-width: 88%; }
+  .msg.user { align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+  .msg-bubble {
+    padding: 10px 14px; border-radius: 10px;
+    font-size: 13px; line-height: 1.65;
+  }
+  .msg.user .msg-bubble { background: rgba(0,229,160,0.12); color: var(--text); border: 1px solid rgba(0,229,160,0.2); }
+  .msg.ai .msg-bubble { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .msg-role { font-size: 10px; color: var(--muted); margin-bottom: 4px; font-family: 'Space Mono', monospace; }
+  .msg.user .msg-role { text-align: right; }
+
+  .chat-input-row {
+    padding: 14px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+  }
+  .chat-input {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 13px; padding: 10px 14px; resize: none; height: 44px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn {
+    background: var(--accent); color: #0a0c0f;
+    border: none; border-radius: 8px; padding: 0 18px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s; white-space: nowrap;
+  }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .quick-prompts { padding: 0 16px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .qp-btn {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 5px 10px; font-size: 11px;
+    color: var(--muted); cursor: pointer; font-family: 'Space Mono', monospace;
+    transition: all 0.15s;
+  }
+  .qp-btn:hover { color: var(--accent); border-color: rgba(0,229,160,0.3); }
+
+  /* ── MILESTONES ── */
+  .milestone-list { display: flex; flex-direction: column; gap: 0; }
+  .milestone-item {
+    display: flex; gap: 16px; padding: 16px 0;
+    border-bottom: 1px solid var(--border); position: relative;
+  }
+  .milestone-item:last-child { border-bottom: none; }
+  .ms-line {
+    display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+    width: 20px;
+  }
+  .ms-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--border2);
+  }
+  .ms-dot.done { background: var(--accent); border-color: var(--accent); }
+  .ms-dot.current { border-color: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .ms-connector { width: 2px; flex: 1; background: var(--border); margin-top: 4px; }
+  .ms-body-wrap { flex: 1; padding-bottom: 4px; }
+  .ms-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .ms-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .ms-day-badge {
+    font-size: 10px; font-family: 'Space Mono', monospace;
+    color: var(--muted); padding: 2px 8px; border: 1px solid var(--border);
+    border-radius: 4px; flex-shrink: 0; height: fit-content;
+  }
+
+  /* ── RESOURCES ── */
+  .resource-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .resource-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .resource-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .resource-url { font-size: 11px; color: var(--accent); margin-bottom: 10px; cursor: pointer; }
+  .resource-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .resource-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rtag {
+    font-size: 10px; padding: 2px 7px; border-radius: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+  .rtag-free  { background: rgba(16,185,129,0.15); color: var(--p2); }
+  .rtag-paid  { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .rtag-must  { background: rgba(239,68,68,0.15); color: var(--p4); }
+  .rtag-phase { background: rgba(59,130,246,0.1); color: var(--p1); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+    padding: 7px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .btn:hover { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+  .btn-accent { background: var(--accent); color: #0a0c0f; border-color: var(--accent); }
+  .btn-accent:hover { opacity: 0.85; color: #0a0c0f; }
+
+  /* ── LOG ── */
+  .log-form { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .log-form-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .form-input {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 13px; padding: 9px 12px; outline: none; transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--muted); }
+  .log-entries { display: flex; flex-direction: column; gap: 8px; }
+  .log-entry {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .log-date { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 6px; }
+  .log-text { font-size: 13px; line-height: 1.65; }
+  .log-tags-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ── TYPING ── */
+  .typing-dots span {
+    display: inline-block; width: 4px; height: 4px;
+    border-radius: 50%; background: var(--muted); margin: 0 2px;
+    animation: blink 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 16px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .phase-grid { grid-template-columns: 1fr; }
+    .resource-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-handle">mprice-sec</div>
+      <div class="logo-title">1278-Day Plan</div>
+      <div class="logo-sub">Red Team · Bug Bounty · Expert</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">OVERVIEW</div>
+      <div class="nav-item active" onclick="goto('dashboard')"><span class="icon">⬡</span> Dashboard</div>
+      <div class="nav-item" onclick="goto('phases')"><span class="icon">◈</span> Phases</div>
+      <div class="nav-item" onclick="goto('milestones')"><span class="icon">◎</span> Milestones</div>
+      <div class="nav-section">DAILY</div>
+      <div class="nav-item" onclick="goto('tasks')"><span class="icon">▣</span> Tasks</div>
+      <div class="nav-item" onclick="goto('log')"><span class="icon">▤</span> Daily Log</div>
+      <div class="nav-section">TOOLS</div>
+      <div class="nav-item" onclick="goto('resources')"><span class="icon">⊞</span> Resources</div>
+      <div class="nav-item" onclick="goto('coach')"><span class="icon">✦</span> AI Coach</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="day-counter" id="sidebar-day">1</div>
+      <div class="day-label">days remaining</div>
+      <div class="progress-mini">
+        <div class="progress-mini-fill" id="sidebar-prog" style="width:0.1%"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Your red team journey at a glance</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">DAYS REMAINING</div>
+          <div class="stat-value c-accent" id="stat-day">1277</div>
+          <div class="stat-sub">of 1,278 total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">TASKS DONE</div>
+          <div class="stat-value c-blue" id="stat-tasks">0</div>
+          <div class="stat-sub" id="stat-tasks-sub">of 0 total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CURRENT PHASE</div>
+          <div class="stat-value" id="stat-phase" style="font-size:18px;padding-top:4px">Foundation</div>
+          <div class="stat-sub" id="stat-phase-sub">Days 1–180</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">LOG STREAK</div>
+          <div class="stat-value c-amber" id="stat-streak">0</div>
+          <div class="stat-sub">days logged</div>
+        </div>
+      </div>
+      <div class="phase-grid" id="phase-grid"></div>
+      <div class="section-header">
+        <div class="section-title">TODAY'S TASKS</div>
+        <button class="btn" onclick="goto('tasks')">View all →</button>
+      </div>
+      <div class="task-list" id="dash-tasks"></div>
+    </div>
+
+    <!-- ══ PHASES ══ -->
+    <div id="page-phases" class="page">
+      <div class="page-header">
+        <div class="page-title">Phases</div>
+        <div class="page-sub">Four phases across 1,278 days — each builds on the last</div>
+      </div>
+      <div id="phases-detail"></div>
+    </div>
+
+    <!-- ══ MILESTONES ══ -->
+    <div id="page-milestones" class="page">
+      <div class="page-header">
+        <div class="page-title">Milestones</div>
+        <div class="page-sub">Key checkpoints on your path to employed red teamer</div>
+      </div>
+      <div class="milestone-list" id="milestone-list"></div>
+    </div>
+
+    <!-- ══ TASKS ══ -->
+    <div id="page-tasks" class="page">
+      <div class="page-header">
+        <div class="page-title">Tasks</div>
+        <div class="page-sub">Your active learning curriculum — check off as you go</div>
+      </div>
+      <div id="tasks-by-phase"></div>
+    </div>
+
+    <!-- ══ DAILY LOG ══ -->
+    <div id="page-log" class="page">
+      <div class="page-header">
+        <div class="page-title">Daily Log</div>
+        <div class="page-sub">3 bullets a day. What you did, learned, and what confused you.</div>
+      </div>
+      <div class="log-form">
+        <div class="log-form-title">Log today — Day <span id="log-day-num">1</span></div>
+        <div class="form-row">
+          <input class="form-input" id="log-did" placeholder="✓ What did you do today?" />
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="log-learned" placeholder="◈ What did you learn?" />
+        </div>
+        <div class="form-row">
+          <input class="form-input" id="log-confused" placeholder="? What confused you?" />
+        </div>
+        <div class="form-row" style="justify-content:flex-end">
+          <button class="btn btn-accent" onclick="saveLog()">Save entry</button>
+        </div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">PAST ENTRIES</div>
+        <span class="stat-sub" id="log-count-label">0 entries</span>
+      </div>
+      <div class="log-entries" id="log-entries"></div>
+    </div>
+
+    <!-- ══ RESOURCES ══ -->
+    <div id="page-resources" class="page">
+      <div class="page-header">
+        <div class="page-title">Resources</div>
+        <div class="page-sub">Every link you need, tagged by phase and cost</div>
+      </div>
+      <div class="resource-grid" id="resource-grid"></div>
+    </div>
+
+    <!-- ══ AI COACH ══ -->
+    <div id="page-coach" class="page">
+      <div class="page-header">
+        <div class="page-title">AI Coach</div>
+        <div class="page-sub">Powered by Claude — knows your plan, your phase, your goals</div>
+      </div>
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="ai-dot"></div>
+          <div class="chat-title">Claude · Red Team Mentor</div>
+          <div class="chat-sub">Claude Sonnet</div>
+        </div>
+        <div class="quick-prompts">
+          <button class="qp-btn" onclick="quickPrompt('What should I focus on this week?')">This week's focus</button>
+          <button class="qp-btn" onclick="quickPrompt('Explain the OSI model for a beginner')">OSI model basics</button>
+          <button class="qp-btn" onclick="quickPrompt('How do I start preparing for eJPT?')">eJPT prep</button>
+          <button class="qp-btn" onclick="quickPrompt('Give me a PortSwigger lab to try today')">Lab suggestion</button>
+          <button class="qp-btn" onclick="quickPrompt('What does a red team job interview look like?')">Interview prep</button>
+          <button class="qp-btn" onclick="quickPrompt('How does Active Directory Kerberoasting work?')">Kerberoasting</button>
+        </div>
+        <div class="chat-messages" id="chat-msgs"></div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-in" placeholder="Ask your mentor anything..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+
+const PHASES = [
+  {
+    id:1, name:'Foundation', days:'1–180', short:'Days 1–180',
+    goal:'Fix networking. Learn how the web works. Get eJPT.',
+    color:'p1', fillClass:'fill-p1',
+    tasks:[
+      { id:'t1', title:'Complete Professor Messer Network+ course', phase:1, tag:'networking', tagColor:'#3b82f6' },
+      { id:'t2', title:'TryHackMe Pre-Security path (all modules)', phase:1, tag:'foundations', tagColor:'#3b82f6' },
+      { id:'t3', title:'Capture 10 real Wireshark packet traces', phase:1, tag:'networking', tagColor:'#3b82f6' },
+      { id:'t4', title:'OverTheWire Bandit — levels 1–10', phase:1, tag:'linux', tagColor:'#10b981' },
+      { id:'t5', title:'OverTheWire Bandit — levels 11–34', phase:1, tag:'linux', tagColor:'#10b981' },
+      { id:'t6', title:'PortSwigger: All SQL injection labs', phase:1, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t7', title:'PortSwigger: All Authentication labs', phase:1, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t8', title:'PortSwigger: All Access Control labs', phase:1, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t9', title:'PortSwigger: All IDOR labs', phase:1, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t10', title:'Start building recon-core on GitHub', phase:1, tag:'project', tagColor:'#f59e0b' },
+      { id:'t11', title:'Publish recon-core v1.0 with README', phase:1, tag:'project', tagColor:'#f59e0b' },
+      { id:'t12', title:'INE eJPT free starter path (complete)', phase:1, tag:'cert', tagColor:'#ef4444' },
+      { id:'t13', title:'Pass eJPT exam', phase:1, tag:'CERT', tagColor:'#ef4444' },
+    ]
+  },
+  {
+    id:2, name:'Depth', days:'181–540', short:'Days 181–540',
+    goal:'30 HTB machines. Active Directory. First paid bounty. PNPT.',
+    color:'p2', fillClass:'fill-p2',
+    tasks:[
+      { id:'t14', title:'TryHackMe: Active Directory Basics module', phase:2, tag:'AD', tagColor:'#ef4444' },
+      { id:'t15', title:'HackTheBox: 10 Easy machines (with writeups)', phase:2, tag:'HTB', tagColor:'#f59e0b' },
+      { id:'t16', title:'HackTheBox: 15 Medium machines', phase:2, tag:'HTB', tagColor:'#f59e0b' },
+      { id:'t17', title:'HackTheBox: 5 Hard machines', phase:2, tag:'HTB', tagColor:'#f59e0b' },
+      { id:'t18', title:'BloodHound setup + AD enumeration practice', phase:2, tag:'AD', tagColor:'#ef4444' },
+      { id:'t19', title:'PortSwigger: SSRF + XXE advanced labs', phase:2, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t20', title:'PortSwigger: File upload + Deserialization labs', phase:2, tag:'web', tagColor:'#8b5cf6' },
+      { id:'t21', title:'Setup crAPI local API vuln lab', phase:2, tag:'API', tagColor:'#06b6d4' },
+      { id:'t22', title:'Submit first bug bounty report with full impact chain', phase:2, tag:'bounty', tagColor:'#10b981' },
+      { id:'t23', title:'Receive first paid bounty', phase:2, tag:'BOUNTY', tagColor:'#10b981' },
+      { id:'t24', title:'Publish 12 writeups on personal blog', phase:2, tag:'brand', tagColor:'#6366f1' },
+      { id:'t25', title:'TCM Security: Practical Ethical Hacking course', phase:2, tag:'course', tagColor:'#f59e0b' },
+      { id:'t26', title:'Pass PNPT exam', phase:2, tag:'CERT', tagColor:'#ef4444' },
+    ]
+  },
+  {
+    id:3, name:'Specialisation', days:'541–900', short:'Days 541–900',
+    goal:'OSCP. Autopen v2. YouTube live. 3+ bounties.',
+    color:'p3', fillClass:'fill-p3',
+    tasks:[
+      { id:'t27', title:'Purchase OffSec PEN-200 (90-day lab access)', phase:3, tag:'OSCP', tagColor:'#ef4444' },
+      { id:'t28', title:'Complete all PEN-200 modules', phase:3, tag:'OSCP', tagColor:'#ef4444' },
+      { id:'t29', title:'TJ Null HTB list — complete all boxes', phase:3, tag:'OSCP', tagColor:'#ef4444' },
+      { id:'t30', title:'PG Practice — all Intermediate Linux boxes', phase:3, tag:'OSCP', tagColor:'#ef4444' },
+      { id:'t31', title:'PG Practice — all Intermediate Windows boxes', phase:3, tag:'OSCP', tagColor:'#ef4444' },
+      { id:'t32', title:'Write 5 full practice pentest reports', phase:3, tag:'report', tagColor:'#6366f1' },
+      { id:'t33', title:'Pass OSCP exam', phase:3, tag:'CERT', tagColor:'#ef4444' },
+      { id:'t34', title:'Autopen v2.0: mature architecture + docs', phase:3, tag:'project', tagColor:'#f59e0b' },
+      { id:'t35', title:'Submit Autopen as final year project', phase:3, tag:'project', tagColor:'#f59e0b' },
+      { id:'t36', title:'Launch YouTube channel — first 10 videos', phase:3, tag:'brand', tagColor:'#6366f1' },
+      { id:'t37', title:'flaws.cloud + flaws2.cloud (AWS misconfigs)', phase:3, tag:'cloud', tagColor:'#06b6d4' },
+      { id:'t38', title:'CryptoHack — complete crypto fundamentals', phase:3, tag:'crypto', tagColor:'#8b5cf6' },
+    ]
+  },
+  {
+    id:4, name:'Expert', days:'901–1278', short:'Days 901–1278',
+    goal:'CRTO or CBBH. Portfolio live. CTF team. Income streams.',
+    color:'p4', fillClass:'fill-p4',
+    tasks:[
+      { id:'t39', title:'Zero Point Security CRTO course', phase:4, tag:'CRTO', tagColor:'#ef4444' },
+      { id:'t40', title:'Pass CRTO exam', phase:4, tag:'CERT', tagColor:'#ef4444' },
+      { id:'t41', title:'Launch mprice-sec.github.io portfolio site', phase:4, tag:'brand', tagColor:'#6366f1' },
+      { id:'t42', title:'Form or join a Nigerian CTF team on CTFtime', phase:4, tag:'CTF', tagColor:'#f59e0b' },
+      { id:'t43', title:'Compete in HackerOne H1 CTF', phase:4, tag:'CTF', tagColor:'#f59e0b' },
+      { id:'t44', title:'5+ paid bounties on record', phase:4, tag:'bounty', tagColor:'#10b981' },
+      { id:'t45', title:'YouTube: 40+ videos, 2000+ subscribers', phase:4, tag:'brand', tagColor:'#6366f1' },
+      { id:'t46', title:'Publish mprice-sec methodology course on Gumroad', phase:4, tag:'revenue', tagColor:'#10b981' },
+      { id:'t47', title:'Apply to first red team / pentest role', phase:4, tag:'career', tagColor:'#3b82f6' },
+      { id:'t48', title:'Speak at CyberSafe Foundation or ISACA Nigeria event', phase:4, tag:'brand', tagColor:'#6366f1' },
+    ]
+  }
+];
+
+const MILESTONES = [
+  { day:30,  title:'Networking foundations solid', desc:'OSI model mastered. You can read a Wireshark trace and explain what is happening at each layer.', done:false },
+  { day:60,  title:'PortSwigger SQLi + Auth labs complete', desc:'Every lab in both categories done. No skipping. This is the web exploitation bedrock.', done:false },
+  { day:90,  title:'OTW Bandit — all 34 levels', desc:'Linux proficiency locked in. Command line is second nature.', done:false },
+  { day:120, title:'recon-core v1.0 published', desc:'First project on GitHub. Real automation tool, proper README, demo output.', done:false },
+  { day:180, title:'eJPT CERTIFIED', desc:'First real credential. Practical exam passed. You have proven you can exploit machines.', done:false },
+  { day:250, title:'10 HTB machines completed', desc:'Mix of Easy Linux and Windows. Private writeups done for each.', done:false },
+  { day:350, title:'Active Directory fundamentals solid', desc:'BloodHound running, Kerberoasting understood, AD attack paths mapped.', done:false },
+  { day:400, title:'First paid bug bounty', desc:'Any platform, any amount. Proof of real-world impact. The report is professional.', done:false },
+  { day:450, title:'30 HTB machines + 12 blog writeups', desc:'Consistent public track record. Private invitations start arriving.', done:false },
+  { day:540, title:'PNPT CERTIFIED', desc:'Practical pentest + professional report submitted. Hireable from this point.', done:false },
+  { day:650, title:'PEN-200 + PG Practice complete', desc:'All OSCP prep material done. Exam attempt ready.', done:false },
+  { day:750, title:'OSCP CERTIFIED', desc:'The cert every red team JD asks for. Doors open globally.', done:false },
+  { day:800, title:'Autopen v2.0 submitted', desc:'Final year project done and published. Signature AI + security project.', done:false },
+  { day:900, title:'YouTube 500+ subscribers, 12 videos', desc:'Visible public presence. Communication skill demonstrated.', done:false },
+  { day:1000, title:'CRTO / CBBH certified', desc:'Advanced red team credential. C2 frameworks, tradecraft, enterprise simulation.', done:false },
+  { day:1100, title:'Portfolio site live + CTF ranking', desc:'mprice-sec.github.io live. CTFtime team competing internationally.', done:false },
+  { day:1200, title:'First income stream active', desc:'Gumroad course, freelance contracts, or consistent bounty income.', done:false },
+  { day:1278, title:'RED TEAM READY', desc:'3+ certs. 30+ machines. 5+ bounties. YouTube brand. Portfolio. CTF ranking. Apply to roles.', done:false },
+];
+
+const RESOURCES = [
+  { title:'Professor Messer Network+', url:'https://www.professormesser.com', desc:'Free, thorough CompTIA Network+ video course. Covers OSI, TCP/IP, DNS, everything you need to stop being foggy on networking fundamentals.', tags:['free','phase-1'], phase:1 },
+  { title:'TryHackMe Pre-Security', url:'https://tryhackme.com/path/outline/presecurity', desc:'Guided, beginner-friendly path covering web fundamentals, Linux, networking. The safest first step.', tags:['free','phase-1'], phase:1 },
+  { title:'PortSwigger Web Academy', url:'https://portswigger.net/web-security', desc:'The single most important free resource for web app hacking. Do every lab. No exceptions.', tags:['free','must','phase-1'], phase:1 },
+  { title:'OverTheWire: Bandit', url:'https://overthewire.org/wargames/bandit/', desc:'34 levels of Linux challenges via SSH. Builds real command-line instinct that no tutorial can replicate.', tags:['free','phase-1'], phase:1 },
+  { title:'eJPT — INE Security', url:'https://security.ine.com/certifications/ejpt-certification/', desc:'Your first cert. Practical exam where you actually exploit machines on a real network. INE free starter path covers 90% of the content.', tags:['paid','cert','phase-1'], phase:1 },
+  { title:'HackTheBox', url:'https://app.hackthebox.com', desc:'VIP gives retired machine access with writeups. Do 30 machines minimum, mix of Linux and Windows. Core of your practical portfolio.', tags:['paid','phase-2'], phase:2 },
+  { title:'TCM Security Academy', url:'https://academy.tcm-sec.com', desc:'Best value pentest courses available. Practical Ethical Hacking covers methodology, AD, reporting. PNPT exam is here.', tags:['paid','must','phase-2'], phase:2 },
+  { title:'crAPI — OWASP API Lab', url:'https://github.com/OWASP/crAPI', desc:'Deliberately vulnerable API built for practice. Set it up locally. Attack every OWASP API Top 10 vulnerability against it.', tags:['free','phase-2'], phase:2 },
+  { title:'OSCP / PEN-200 — OffSec', url:'https://www.offensive-security.com/pwk-oscp/', desc:'The cert every red team job description asks for. 90-day lab access. Budget time, money, and mental health. Worth every bit of it.', tags:['paid','must','phase-3'], phase:3 },
+  { title:'PG Practice — OffSec', url:'https://portal.offsec.com/labs/practice', desc:'OffSec\'s own practice platform. Retired exam-style boxes. Do every Intermediate Linux and Windows machine before your OSCP attempt.', tags:['paid','phase-3'], phase:3 },
+  { title:'flaws.cloud', url:'http://flaws.cloud', desc:'Free AWS misconfiguration challenge. S3 buckets, SSRF to metadata, IAM issues. Excellent cloud security introduction.', tags:['free','phase-3'], phase:3 },
+  { title:'CryptoHack', url:'https://cryptohack.org', desc:'Gamified cryptography challenges. Covers JWT attacks, weak signing, hash length extension. Actually enjoyable.', tags:['free','phase-3'], phase:3 },
+  { title:'CRTO — Zero Point Security', url:'https://training.zeropointsecurity.co.uk/courses/red-team-ops', desc:'Cobalt Strike, C2 frameworks, red team tradecraft. The cert specifically for employed red teamers. Highly respected.', tags:['paid','cert','phase-4'], phase:4 },
+  { title:'CTFtime', url:'https://ctftime.org', desc:'Register your team, track CTF competitions globally, build a public ranking. Employers search this.', tags:['free','phase-4'], phase:4 },
+  { title:'CyberSafe Foundation Nigeria', url:'https://www.cybersafe.ng', desc:'Nigerian cybersecurity community. Events, networking, speaking opportunities. Get visible in the local scene.', tags:['free','phase-4'], phase:4 },
+  { title:'Gumroad', url:'https://gumroad.com', desc:'Sell your methodology course without Stripe. Nigeria-accessible. Even 100 sales at $15 = meaningful income and proof of expertise.', tags:['free','revenue','phase-4'], phase:4 },
+];
+
+// ══════════════════════════════════════════
+// STATE (stored in localStorage)
+// ══════════════════════════════════════════
+function loadState() {
+  return {
+    startDay: JSON.parse(localStorage.getItem('mps_start') || 'null') || new Date().toISOString().slice(0,10),
+    doneTasks: JSON.parse(localStorage.getItem('mps_done') || '[]'),
+    logs: JSON.parse(localStorage.getItem('mps_logs') || '[]'),
+    milestones: JSON.parse(localStorage.getItem('mps_ms') || '[]'),
+    chatHistory: JSON.parse(localStorage.getItem('mps_chat') || '[]'),
+  };
+}
+function saveState(s) {
+  localStorage.setItem('mps_start', JSON.stringify(s.startDay));
+  localStorage.setItem('mps_done', JSON.stringify(s.doneTasks));
+  localStorage.setItem('mps_logs', JSON.stringify(s.logs));
+  localStorage.setItem('mps_ms', JSON.stringify(s.milestones));
+  localStorage.setItem('mps_chat', JSON.stringify(s.chatHistory));
+}
+
+let S = loadState();
+
+function currentDay() {
+  const start = new Date(S.startDay);
+  const now = new Date();
+  const elapsed = Math.floor((now - start) / 86400000);
+  return Math.max(0, 1277 - elapsed);
+}
+function elapsedDay() {
+  const start = new Date(S.startDay);
+  const now = new Date();
+  return Math.min(1278, Math.floor((now - start) / 86400000) + 1);
+}
+function currentPhase(daysRemaining) {
+  const elapsed = 1278 - daysRemaining;
+  if (elapsed <= 180) return 1;
+  if (elapsed <= 540) return 2;
+  if (elapsed <= 900) return 3;
+  return 4;
+}
+function phaseProgress(phase, doneTasks) {
+  const tasks = PHASES[phase-1].tasks;
+  const done = tasks.filter(t => doneTasks.includes(t.id)).length;
+  return tasks.length ? Math.round(done/tasks.length*100) : 0;
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const idx = ['dashboard','phases','milestones','tasks','log','resources','coach'];
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems[idx.indexOf(page)]?.classList.add('active');
+  renderPage(page);
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function renderAll() {
+  const remaining = currentDay();
+  const elapsed = elapsedDay();
+  const phase = currentPhase(remaining);
+  const pctLeft = Math.round(remaining/1278*100*10)/10;
+
+  document.getElementById('sidebar-day').textContent = remaining;
+  document.getElementById('sidebar-prog').style.width = pctLeft+'%';
+  document.getElementById('stat-day').textContent = remaining;
+  document.getElementById('stat-tasks').textContent = S.doneTasks.length;
+  document.getElementById('stat-tasks-sub').textContent = 'of '+PHASES.flatMap(p=>p.tasks).length+' total';
+  document.getElementById('stat-phase').textContent = PHASES[phase-1].name;
+  document.getElementById('stat-phase-sub').textContent = PHASES[phase-1].short;
+  document.getElementById('stat-streak').textContent = calcStreak();
+  document.getElementById('log-day-num').textContent = elapsed;
+  renderPhaseGrid();
+  renderDashTasks();
+}
+
+function renderPhaseGrid() {
+  const remaining = currentDay();
+  const grid = document.getElementById('phase-grid');
+  grid.innerHTML = PHASES.map(ph => {
+    const pct = phaseProgress(ph.id, S.doneTasks);
+    const isActive = currentPhase(remaining) === ph.id;
+    return `<div class="phase-card ${isActive?'active-phase':''}" onclick="goto('phases')">
+      <div class="phase-top">
+        <span class="phase-badge ph${ph.id}">PHASE ${ph.id}</span>
+        <span class="phase-pct">${pct}%</span>
+      </div>
+      <div class="phase-name">${ph.name}</div>
+      <div class="phase-days">Days ${ph.days}</div>
+      <div class="phase-bar"><div class="phase-bar-fill ${ph.fillClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashTasks() {
+  const remaining = currentDay();
+  const phase = currentPhase(remaining);
+  const tasks = PHASES[phase-1].tasks.filter(t => !S.doneTasks.includes(t.id)).slice(0,4);
+  document.getElementById('dash-tasks').innerHTML = tasks.length
+    ? tasks.map(t => taskHTML(t)).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:12px 0">All phase tasks complete! Move to the next phase.</div>';
+}
+
+function taskHTML(t) {
+  const done = S.doneTasks.includes(t.id);
+  return `<div class="task-item ${done?'done':''}" onclick="toggleTask('${t.id}')">
+    <div class="task-check">${done?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#0a0c0f" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>':''}</div>
+    <div class="task-body">
+      <div class="task-title">${t.title}</div>
+      <div class="task-meta">
+        <span class="task-tag" style="background:${t.tagColor}22;color:${t.tagColor}">${t.tag}</span>
+        <span>Phase ${t.phase}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPage(page) {
+  if (page === 'phases') renderPhasesDetail();
+  if (page === 'milestones') renderMilestones();
+  if (page === 'tasks') renderTasks();
+  if (page === 'log') renderLog();
+  if (page === 'resources') renderResources();
+  if (page === 'coach') renderCoach();
+}
+
+function renderPhasesDetail() {
+  const remaining = currentDay();
+  const phase = currentPhase(remaining);
+  document.getElementById('phases-detail').innerHTML = PHASES.map(ph => {
+    const pct = phaseProgress(ph.id, S.doneTasks);
+    const isActive = phase === ph.id;
+    const done = ph.tasks.filter(t => S.doneTasks.includes(t.id)).length;
+    return `<div style="background:var(--bg2);border:1px solid ${isActive?'var(--accent)':'var(--border)'};border-radius:12px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <span class="phase-badge ph${ph.id}">PHASE ${ph.id} · DAYS ${ph.days}</span>
+          <div style="font-size:18px;font-weight:800;margin-top:6px">${ph.name}</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">${ph.goal}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:800;font-family:'Space Mono',monospace;color:var(--${ph.color})">${pct}%</div>
+          <div style="font-size:11px;color:var(--muted)">${done}/${ph.tasks.length} tasks</div>
+        </div>
+      </div>
+      <div class="phase-bar" style="margin-bottom:16px"><div class="phase-bar-fill ${ph.fillClass}" style="width:${pct}%"></div></div>
+      <div class="task-list">${ph.tasks.map(t=>taskHTML(t)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMilestones() {
+  const elapsed = elapsedDay();
+  document.getElementById('milestone-list').innerHTML = MILESTONES.map((ms,i) => {
+    const done = ms.day < elapsed;
+    const current = ms.day >= elapsed && (i===0 || MILESTONES[i-1].day < elapsed);
+    return `<div class="milestone-item">
+      <div class="ms-line">
+        <div class="ms-dot ${done?'done':current?'current':''}"></div>
+        ${i<MILESTONES.length-1?'<div class="ms-connector"></div>':''}
+      </div>
+      <div class="ms-body-wrap">
+        <div class="ms-title" style="${done?'color:var(--muted);text-decoration:line-through':current?'color:var(--accent)':''}">${ms.title}</div>
+        <div class="ms-desc">${ms.desc}</div>
+      </div>
+      <div class="ms-day-badge">Day ${ms.day}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTasks() {
+  document.getElementById('tasks-by-phase').innerHTML = PHASES.map(ph => {
+    const done = ph.tasks.filter(t => S.doneTasks.includes(t.id)).length;
+    return `<div style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title"><span class="phase-badge ph${ph.id}" style="margin-right:8px">PHASE ${ph.id}</span>${ph.name}</div>
+        <span style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace">${done}/${ph.tasks.length}</span>
+      </div>
+      <div class="task-list">${ph.tasks.map(t=>taskHTML(t)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLog() {
+  document.getElementById('log-count-label').textContent = S.logs.length+' entries';
+  document.getElementById('log-entries').innerHTML = [...S.logs].reverse().map(l => `
+    <div class="log-entry">
+      <div class="log-date">Day ${l.day} · ${l.date}</div>
+      ${l.did ? `<div class="log-text">✓ ${l.did}</div>` : ''}
+      ${l.learned ? `<div class="log-text" style="margin-top:4px">◈ ${l.learned}</div>` : ''}
+      ${l.confused ? `<div class="log-text" style="margin-top:4px">? ${l.confused}</div>` : ''}
+    </div>`).join('') || '<div style="color:var(--muted);font-size:13px;padding:8px 0">No entries yet. Log your first day above.</div>';
+}
+
+function renderResources() {
+  document.getElementById('resource-grid').innerHTML = RESOURCES.map(r => {
+    const tagMap = { free:'rtag-free', paid:'rtag-paid', must:'rtag-must' };
+    const tags = r.tags.map(t => {
+      const cls = tagMap[t] || 'rtag-phase';
+      return `<span class="rtag ${cls}">${t}</span>`;
+    }).join('');
+    return `<div class="resource-card">
+      <div class="resource-title">${r.title}</div>
+      <div class="resource-url" onclick="window.open('${r.url}','_blank')">${r.url.replace('https://','').replace('http://','')}</div>
+      <div class="resource-desc">${r.desc}</div>
+      <div class="resource-tags">${tags}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCoach() {
+  const msgs = document.getElementById('chat-msgs');
+  msgs.innerHTML = '';
+  const remaining = currentDay();
+  const elapsed = elapsedDay();
+  const phase = currentPhase(remaining);
+  if (S.chatHistory.length === 0) {
+    addBubble('ai', `Hey Mr. Price. I'm your AI mentor for the 1278-day red team plan. I know exactly where you are, what phase you're in, and what your goals are.\n\nDay ${elapsed} of the journey — ${remaining} days remaining. Phase ${phase} (${PHASES[phase-1].name}). ${phaseProgress(phase, S.doneTasks)}% of your phase tasks done.\n\nWhat do you want to work through today?`);
+  } else {
+    S.chatHistory.forEach(m => addBubble(m.role, m.content));
+  }
+}
+
+function addBubble(role, text) {
+  const msgs = document.getElementById('chat-msgs');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'msg '+role;
+  div.innerHTML = `<div class="msg-role">${role === 'ai' ? 'CLAUDE · MENTOR' : 'YOU'}</div>
+    <div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ══════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════
+function toggleTask(id) {
+  if (S.doneTasks.includes(id)) {
+    S.doneTasks = S.doneTasks.filter(x => x !== id);
+  } else {
+    S.doneTasks.push(id);
+  }
+  saveState(S);
+  renderAll();
+  renderPage(document.querySelector('.page.active')?.id?.replace('page-',''));
+}
+
+function saveLog() {
+  const did = document.getElementById('log-did').value.trim();
+  const learned = document.getElementById('log-learned').value.trim();
+  const confused = document.getElementById('log-confused').value.trim();
+  if (!did && !learned && !confused) return;
+  S.logs.push({
+    day: currentDay(),
+    date: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}),
+    did, learned, confused
+  });
+  saveState(S);
+  document.getElementById('log-did').value = '';
+  document.getElementById('log-learned').value = '';
+  document.getElementById('log-confused').value = '';
+  renderAll();
+  renderLog();
+}
+
+function calcStreak() {
+  return S.logs.length;
+}
+
+// ══════════════════════════════════════════
+// AI COACH
+// ══════════════════════════════════════════
+function quickPrompt(text) {
+  document.getElementById('chat-in').value = text;
+  sendMsg();
+}
+
+async function sendMsg() {
+  const input = document.getElementById('chat-in');
+  const btn = document.getElementById('send-btn');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addBubble('user', text);
+  S.chatHistory.push({ role:'user', content:text });
+  input.value = '';
+  btn.disabled = true;
+
+  // typing indicator
+  const msgs = document.getElementById('chat-msgs');
+  const typing = document.createElement('div');
+  typing.className = 'msg ai';
+  typing.id = 'typing';
+  typing.innerHTML = `<div class="msg-role">CLAUDE · MENTOR</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const remaining = currentDay();
+  const elapsed = elapsedDay();
+  const phase = currentPhase(remaining);
+  const phaseName = PHASES[phase-1].name;
+  const phasePct = phaseProgress(phase, S.doneTasks);
+  const doneTasks = PHASES.flatMap(p=>p.tasks).filter(t=>S.doneTasks.includes(t.id)).map(t=>t.title);
+  const pendingTasks = PHASES[phase-1].tasks.filter(t=>!S.doneTasks.includes(t.id)).map(t=>t.title);
+
+  const systemPrompt = `You are a direct, experienced red team mentor coaching a cybersecurity student named Mr. Price (handle: mprice-sec) who is on a 1278-day structured journey to become an employed red team penetration tester.
+
+CURRENT STATUS:
+- Day: ${elapsed} of 1278 elapsed (${remaining} days remaining)
+- Phase: ${phase} — ${phaseName} (Days ${PHASES[phase-1].days})
+- Phase completion: ${phasePct}%
+- Certs held: None yet (eJPT is next target)
+- Networking fundamentals: Weak (OSI model foggy — this is the #1 priority in Phase 1)
+- Bug bounty platforms: HackerOne, Bugcrowd, Intigriti, HackenProof (verified)
+- OS: Kali Linux, VPN: Mullvad, Location: Nigeria
+- Final year student at University of Delta, Agbor
+- Building Autopen (LangChain ReAct agent + Ollama) as final year project
+- Long-term goal: Employed red team penetration tester
+
+COMPLETED TASKS:
+${doneTasks.length ? doneTasks.join('\n') : 'None yet'}
+
+PENDING PHASE ${phase} TASKS:
+${pendingTasks.join('\n')}
+
+YOUR STYLE: Be direct. Don't sugarcoat. Give concrete, actionable advice. Short paragraphs. Reference specific tools, commands, or resources by name. If the question is technical, answer technically. You know this person's exact situation — use it. Never be generic.`;
+
+  const messages = S.chatHistory.slice(-10).map(m => ({
+    role: m.role === 'ai' ? 'assistant' : 'user',
+    content: m.content
+  }));
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.find(b=>b.type==='text')?.text || 'Something went wrong. Try again.';
+    document.getElementById('typing')?.remove();
+    addBubble('ai', reply);
+    S.chatHistory.push({ role:'ai', content:reply });
+    saveState(S);
+  } catch(e) {
+    document.getElementById('typing')?.remove();
+    addBubble('ai', 'Connection error. Check your internet and try again.');
+  }
+  btn.disabled = false;
+}
+
+// ══════════════════════════════════════════
+// VIEW-ONLY MODE
+// ══════════════════════════════════════════
+const VIEW_ONLY = new URLSearchParams(window.location.search).get('view') === '1';
+
+function applyViewOnly() {
+  if (!VIEW_ONLY) return;
+
+  // Banner in sidebar footer
+  const footer = document.querySelector('.sidebar-footer');
+  const banner = document.createElement('div');
+  banner.style.cssText = 'margin-top:10px;padding:5px 10px;background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);border-radius:6px;font-size:10px;font-family:"Space Mono",monospace;color:var(--accent);letter-spacing:0.05em;text-align:center';
+  banner.textContent = 'VIEW ONLY';
+  footer.appendChild(banner);
+
+  // Hide log form, chat input row, quick prompts
+  const hideSelectors = ['.log-form', '.chat-input-row', '.quick-prompts'];
+  hideSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
+  });
+
+  // Remove AI Coach nav item (can't use it anyway)
+  document.querySelectorAll('.nav-item').forEach(el => {
+    if (el.textContent.includes('AI Coach')) el.style.display = 'none';
+  });
+
+  // Make task items non-interactive visually
+  document.head.insertAdjacentHTML('beforeend', `<style>
+    .task-item { cursor: default !important; }
+    .task-item:hover { border-color: var(--border) !important; }
+    .task-check { pointer-events: none; }
+  </style>`);
+}
+
+// Block writes in view-only mode
+const _toggleTask = toggleTask;
+toggleTask = function(id) { if (!VIEW_ONLY) _toggleTask(id); };
+
+const _saveLog = saveLog;
+saveLog = function() { if (!VIEW_ONLY) _saveLog(); };
+
+const _sendMsg = sendMsg;
+sendMsg = function() { if (!VIEW_ONLY) _sendMsg(); };
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+renderAll();
+applyViewOnly();
+</script>
+</body>
+</html>
