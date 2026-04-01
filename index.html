@@ -492,6 +492,13 @@
           <div class="chat-title">Claude · Red Team Mentor</div>
           <div class="chat-sub">Claude Sonnet</div>
         </div>
+        <div style="padding:10px 16px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+          <input id="api-key-input" type="password"
+            style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:7px 12px;outline:none;"
+            placeholder="Paste Anthropic API key to enable coach (console.anthropic.com)"
+            oninput="localStorage.setItem('mps_apikey', this.value)"
+          />
+        </div>
         <div class="quick-prompts">
           <button class="qp-btn" onclick="quickPrompt('What should I focus on this week?')">This week's focus</button>
           <button class="qp-btn" onclick="quickPrompt('Explain the OSI model for a beginner')">OSI model basics</button>
@@ -638,9 +645,11 @@ const RESOURCES = [
 // ══════════════════════════════════════════
 // STATE (stored in localStorage)
 // ══════════════════════════════════════════
+// Day 1 = April 1, 2026 — hardcoded, never changes
+const START_DATE = '2026-04-01';
+
 function loadState() {
   return {
-    startDay: JSON.parse(localStorage.getItem('mps_start') || 'null') || new Date().toISOString().slice(0,10),
     doneTasks: JSON.parse(localStorage.getItem('mps_done') || '[]'),
     logs: JSON.parse(localStorage.getItem('mps_logs') || '[]'),
     milestones: JSON.parse(localStorage.getItem('mps_ms') || '[]'),
@@ -648,7 +657,6 @@ function loadState() {
   };
 }
 function saveState(s) {
-  localStorage.setItem('mps_start', JSON.stringify(s.startDay));
   localStorage.setItem('mps_done', JSON.stringify(s.doneTasks));
   localStorage.setItem('mps_logs', JSON.stringify(s.logs));
   localStorage.setItem('mps_ms', JSON.stringify(s.milestones));
@@ -658,14 +666,19 @@ function saveState(s) {
 let S = loadState();
 
 function currentDay() {
-  const start = new Date(S.startDay);
+  const start = new Date(START_DATE);
   const now = new Date();
+  // Zero out time component so it's purely date-based
+  start.setHours(0,0,0,0);
+  now.setHours(0,0,0,0);
   const elapsed = Math.floor((now - start) / 86400000);
   return Math.max(0, 1277 - elapsed);
 }
 function elapsedDay() {
-  const start = new Date(S.startDay);
+  const start = new Date(START_DATE);
   const now = new Date();
+  start.setHours(0,0,0,0);
+  now.setHours(0,0,0,0);
   return Math.min(1278, Math.floor((now - start) / 86400000) + 1);
 }
 function currentPhase(daysRemaining) {
@@ -919,6 +932,7 @@ function quickPrompt(text) {
 }
 
 async function sendMsg() {
+  if (VIEW_ONLY) return;
   const input = document.getElementById('chat-in');
   const btn = document.getElementById('send-btn');
   const text = input.value.trim();
@@ -968,6 +982,13 @@ ${pendingTasks.join('\n')}
 
 YOUR STYLE: Be direct. Don't sugarcoat. Give concrete, actionable advice. Short paragraphs. Reference specific tools, commands, or resources by name. If the question is technical, answer technically. You know this person's exact situation — use it. Never be generic.`;
 
+  const apiKey = document.getElementById('api-key-input')?.value?.trim();
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  // anthropic-dangerous-direct-browser-access required for direct browser calls with own key
+  if (apiKey) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
   const messages = S.chatHistory.slice(-10).map(m => ({
     role: m.role === 'ai' ? 'assistant' : 'user',
     content: m.content
@@ -976,7 +997,7 @@ YOUR STYLE: Be direct. Don't sugarcoat. Give concrete, actionable advice. Short 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -984,6 +1005,14 @@ YOUR STYLE: Be direct. Don't sugarcoat. Give concrete, actionable advice. Short 
         messages
       })
     });
+
+    if (res.status === 401 || res.status === 403) {
+      document.getElementById('typing')?.remove();
+      addBubble('ai', '⚠️ API key missing or invalid.\n\nTo use the AI Coach on GitHub Pages:\n1. Get your API key from console.anthropic.com\n2. Paste it in the field above the chat\n3. Your key stays in your browser only — never sent anywhere except Anthropic');
+      btn.disabled = false;
+      return;
+    }
+
     const data = await res.json();
     const reply = data.content?.find(b=>b.type==='text')?.text || 'Something went wrong. Try again.';
     document.getElementById('typing')?.remove();
@@ -992,7 +1021,7 @@ YOUR STYLE: Be direct. Don't sugarcoat. Give concrete, actionable advice. Short 
     saveState(S);
   } catch(e) {
     document.getElementById('typing')?.remove();
-    addBubble('ai', 'Connection error. Check your internet and try again.');
+    addBubble('ai', '⚠️ Connection error. If you\'re on GitHub Pages, make sure your API key is entered above and you have internet access.');
   }
   btn.disabled = false;
 }
@@ -1046,6 +1075,13 @@ sendMsg = function() { if (!VIEW_ONLY) _sendMsg(); };
 // ══════════════════════════════════════════
 renderAll();
 applyViewOnly();
+
+// Restore saved API key
+const savedKey = localStorage.getItem('mps_apikey');
+if (savedKey) {
+  const keyInput = document.getElementById('api-key-input');
+  if (keyInput) keyInput.value = savedKey;
+}
 </script>
 </body>
 </html>
